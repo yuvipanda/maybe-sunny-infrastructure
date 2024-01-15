@@ -1,2 +1,11 @@
 cert-manager:
   installCRDs: true
+
+minio:
+  # The default is... 16 replicas
+  replicas: 3
+
+  resources:
+    requests:
+      # The default request is... 16Gi
+      memory: 256Mi
