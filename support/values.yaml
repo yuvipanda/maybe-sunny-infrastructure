@@ -5,6 +5,13 @@ minio:
   # The default is... 16 replicas
   replicas: 3
 
+  networkPolicy:
+    # Ideally, I wouldn't allow access to minio from other namespaces unless the pod has
+    # an annotation, regardless of wether it has credentials or not. However, the helm
+    # chart doesn't support specifying Namespace selector yet, only a pod selector.
+    # So no real network policy enforcement for now
+    enabled: false
+
   resources:
     requests:
       # The default request is... 16Gi
