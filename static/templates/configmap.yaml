@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "static.fullname" . }}
+data:
+  config.toml: |
+    [general]
+
+    port = 80
+
+    [advanced]
+    [[advanced.virtual-hosts]]
+    {{- range $key, $config := .Values.repos }}
+    host = "{{ $config.host }}"
+    root = "/content/{{ $key }}/{{ $config.subPath }}"
+    {{- end }}

@@ -1,0 +1,140 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "static.fullname" . }}
+  labels:
+    {{- include "static.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "static.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/configmap: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum | quote }}
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "static.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "static.fullname" . }}
+      - name: content
+        emptyDir: {}
+      initContainers:
+      - name: content-clone
+        image: alpine/git:2.40.1
+        command:
+          - /bin/sh
+        args:
+          - -c
+          # Remove the existing repo first if it exists, as otherwise we will
+          # error out when the pod restarts. /srv/extra-templates-dir is an
+          # emptyDir volume, so it is *not* cleaned up when the pod's containers restarts -
+          # only when the pod is deleted and cleaned back up.
+          # We also mount the emptyDir in `/srv/extra-templates-dir` but
+          # clone into a *subdirectory*, as the mount itself is owned by
+          # root, and git freaks out when that is the case. By putting
+          # the repo in a sub directory, we avoid the permission problems.
+          - |
+            {{- range $key, $config := .Values.repos }}
+            rm -rf /content/{{ $key }};
+            git clone {{ $config.repo }} /content/{{ $key }};
+            ls /content/{{ $key }};
+            {{- end }}
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        volumeMounts:
+          - name: content
+            mountPath: /content
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          volumeMounts:
+          - name: config
+            mountPath: /config
+          - name: content
+            mountPath: /content
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          args:
+          - --config-file=/config/config.toml
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        - name: content-sync
+          image: alpine/git:2.40.1
+          workingDir: /content
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - |
+              handle_sigterm() {
+                  echo "SIGTERM received, terminating...";
+                  exit;
+              }
+              trap handle_sigterm SIGTERM;
+
+              echo "Starting content sync...";
+              while true; do
+                  {{- range $key, $config := .Values.repos }}
+                  echo "Syncing local git repo {{ $key }} ({{ $config.repo }}) against origin's branch {{ $config.branch }} every 5 minutes...";
+                  cd /content/{{ $key }}
+                  git fetch origin;
+                  git reset --hard origin/{{ $config.branch }};
+                  {{- end }}
+
+                  # signal handling can only be done between sleep calls, so this
+                  # shouldn't be reduced to the otherwise equivalent "sleep 5m"
+                  for i in $(seq 300); do
+                      sleep 1s;
+                  done
+              done
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: content
+              mountPath: /content
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
