@@ -3,7 +3,10 @@ cert-manager:
 
 minio:
   # The default is... 16 replicas
-  replicas: 3
+  # I suppose I could use 3, but the data is all backed by the *same* hetzner volume lol,
+  # so even two is maybe overkill? But I'd like to have two *pods*, even if not 2 backing
+  # volumes, just for a bit of HA. So I'll set it to 2, rather than 3.
+  replicas: 2
 
   networkPolicy:
     # Ideally, I wouldn't allow access to minio from other namespaces unless the pod has
