@@ -19,3 +19,8 @@ minio:
     requests:
       # The default request is... 16Gi
       memory: 256Mi
+
+  persistence:
+    # local-path provisioner does not enforce this, but let's set it just for intention anyway
+    # The default hetzner volume I set up only has
+    size: 5Gi
