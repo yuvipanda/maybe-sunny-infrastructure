@@ -35,8 +35,31 @@ spec:
         {{- end }}
       secretName: {{ .secretName }}
     {{- end }}
+    {{- range $key, $config := .Values.repos }}
+    - hosts:
+      - {{ $config.host | quote}}
+      secretName: {{ $key }}-tls-secret
+    {{- end }}
   {{- end }}
   rules:
+    {{- range $key, $config := .Values.repos }}
+    - host: {{ $config.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
+              service:
+                name: {{ $fullName }}
+                port:
+                  number: {{ $svcPort }}
+              {{- else }}
+              serviceName: {{ $fullName }}
+              servicePort: {{ $svcPort }}
+              {{- end }}
+    {{- end }}
+
     {{- range .Values.ingress.hosts }}
     - host: {{ .host | quote }}
       http:

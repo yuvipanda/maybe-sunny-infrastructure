@@ -9,8 +9,8 @@ data:
     port = 80
 
     [advanced]
-    [[advanced.virtual-hosts]]
     {{- range $key, $config := .Values.repos }}
+    [[advanced.virtual-hosts]]
     host = "{{ $config.host }}"
     root = "/content/{{ $key }}/{{ $config.subPath }}"
     {{- end }}
