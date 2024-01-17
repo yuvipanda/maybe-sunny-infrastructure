@@ -47,7 +47,14 @@ ingress:
   annotations:
       cert-manager.io/cluster-issuer: letsencrypt-prod
 
-resources: {}
+resources:
+  requests:
+    # Generally static-web-server is very memory efficient, and only seems to use about 3-4Mb when idle
+    memory: 8Mi
+    cpu: 1m
+  limits:
+    memory: 128Mi
+    cpu: 1
 
 autoscaling:
   enabled: false
