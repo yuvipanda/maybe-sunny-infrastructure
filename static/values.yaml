@@ -14,11 +14,11 @@ nameOverride: ""
 fullnameOverride: ""
 
 repos:
-  blog-test:
+  landing:
     repo: https://github.com/yuvipanda/words/
     branch: master
-    host: test.yuvi.in
-    subPath: public/
+    host: yuvi.in
+    subPath: landing/
   blog:
     repo: https://github.com/yuvipanda/words/
     branch: master
