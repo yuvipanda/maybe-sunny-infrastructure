@@ -1,0 +1,40 @@
+env:
+  AWS_S3_ENDPOINT_URL: http://support-minio.support:9000
+  AWS_S3_BUCKET: nbss
+
+service:
+  type: ClusterIP
+
+image:
+  tag:  sha-e74f255
+
+ingress:
+  enabled: true
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+  - host: ipynb.pub
+    paths:
+    - path: /
+      pathType: ImplementationSpecific
+  - host: notebooksharing.space
+    paths:
+    - path: /
+      pathType: ImplementationSpecific
+  tls:
+    - secretName: ipynb-pub-tls
+      hosts:
+      - ipynb.pub
+    - secretName: notebooksharing-space-tls
+      hosts:
+      - notebooksharing.space
+
+resources:
+  # This is the only real 'production' thing on this server, so let's give
+  # it some space.
+  limits:
+    cpu: 1
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 512Mi
