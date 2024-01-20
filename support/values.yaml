@@ -18,7 +18,12 @@ minio:
   resources:
     requests:
       # The default request is... 16Gi
+      # Memory use is generally below these numbers
       memory: 256Mi
+      cpu: 10m
+    limit:
+      memory: 1Gi
+      cpu: 1
 
   persistence:
     # local-path provisioner does not enforce this, but let's set it just for intention anyway
