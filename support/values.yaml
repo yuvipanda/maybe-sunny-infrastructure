@@ -31,3 +31,13 @@ minio:
     # local-path provisioner does not enforce this, but let's set it just for intention anyway
     # The default hetzner volume I set up only has
     size: 5Gi
+
+prometheus:
+  alertmanager:
+    enabled: false
+
+  kube-state-metrics:
+    enabled: false
+
+  prometheus-pushgateway:
+    enabled: false
