@@ -5,9 +5,6 @@ env:
 service:
   type: ClusterIP
 
-image:
-  tag:  sha-e74f255
-
 ingress:
   enabled: true
   annotations:
